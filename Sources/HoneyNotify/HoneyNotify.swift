@@ -4,6 +4,13 @@ import UserNotifications
 import UIKit
 #endif
 
+public enum HoneyNotifyInterruptionLevel: String, CaseIterable, Sendable {
+    case passive
+    case active
+    case timeSensitive = "time_sensitive"
+    case critical
+}
+
 public final class HoneyNotify {
     private let baseURL: URL
     private let clientKey: String
@@ -15,13 +22,21 @@ public final class HoneyNotify {
         self.session = session
     }
 
-    public func requestPermission() async throws -> Bool {
-        try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
+    public func requestPermission(includeCriticalAlerts: Bool = false) async throws -> Bool {
+        try await UNUserNotificationCenter.current().requestAuthorization(
+            options: Self.authorizationOptions(includeCriticalAlerts: includeCriticalAlerts)
+        )
+    }
+
+    static func authorizationOptions(includeCriticalAlerts: Bool = false) -> UNAuthorizationOptions {
+        var options: UNAuthorizationOptions = [.alert, .badge, .sound]
+        if includeCriticalAlerts { options.insert(.criticalAlert) }
+        return options
     }
 
     #if canImport(UIKit)
-    @MainActor public func requestPermissionAndRegister() async throws -> Bool {
-        let granted = try await requestPermission()
+    @MainActor public func requestPermissionAndRegister(includeCriticalAlerts: Bool = false) async throws -> Bool {
+        let granted = try await requestPermission(includeCriticalAlerts: includeCriticalAlerts)
         if granted { UIApplication.shared.registerForRemoteNotifications() }
         return granted
     }
@@ -81,11 +96,18 @@ public final class HoneyNotify {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
+    public func criticalAlertPermissionStatus() async -> UNNotificationSetting {
+        await UNUserNotificationCenter.current().notificationSettings().criticalAlertSetting
+    }
+
     public func notification(from userInfo: [AnyHashable: Any]) -> HoneyNotifyNotification {
         HoneyNotifyNotification(
             id: userInfo["honeynotify_notification_id"] as? String,
             clickURL: (userInfo["honeynotify_click_url"] as? String).flatMap(URL.init(string:)),
             imageURL: (userInfo["honeynotify_image_url"] as? String).flatMap(URL.init(string:)),
+            interruptionLevel: HoneyNotifyInterruptionLevel(
+                rawValue: userInfo["honeynotify_interruption_level"] as? String ?? "active"
+            ) ?? .active,
             data: userInfo["data"] as? [String: Any] ?? [:]
         )
     }
@@ -129,6 +151,7 @@ public struct HoneyNotifyNotification {
     public let id: String?
     public let clickURL: URL?
     public let imageURL: URL?
+    public let interruptionLevel: HoneyNotifyInterruptionLevel
     public let data: [String: Any]
 }
 
