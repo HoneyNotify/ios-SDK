@@ -84,7 +84,7 @@ public final class HoneyNotify {
     }
 
     public func track(event: String, notificationId: String? = nil, metadata: [String: String] = [:]) async throws {
-        let standardEvents = ["received", "opened", "clicked", "dismissed"]
+        let standardEvents = ["received", "confirmed_delivered", "opened", "clicked", "dismissed"]
         var payload: [String: Any] = ["event_type": standardEvents.contains(event) ? event : "custom", "occurred_at": ISO8601DateFormatter().string(from: Date()), "metadata": metadata]
         if !standardEvents.contains(event) { payload["event_name"] = event }
         payload["notification_id"] = notificationId
