@@ -2,8 +2,6 @@
 
 The HoneyNotify iOS SDK registers APNs devices, maintains user identity and tags across token refreshes, parses notification payloads, and reports notification lifecycle events.
 
-The canonical source lives in [`sdks/ios`](https://github.com/charlesbradber/HoneyNotify/tree/main/sdks/ios). Changes merged there are tested and mirrored automatically to this repository.
-
 ## Requirements
 
 - iOS 15 or later
@@ -33,6 +31,15 @@ let honeyNotify = HoneyNotify(
 let granted = try await honeyNotify.requestPermissionAndRegister()
 ```
 
+For an app that has Apple's approved Critical Alerts entitlement, explicitly include critical-alert permission:
+
+```swift
+let granted = try await honeyNotify.requestPermissionAndRegister(includeCriticalAlerts: true)
+let criticalSetting = await honeyNotify.criticalAlertPermissionStatus()
+```
+
+Do not enable this option in an app without the entitlement. A server-side `critical` interruption level cannot grant the entitlement or override the user's permission choice.
+
 Pass the APNs token received by your app delegate to the SDK:
 
 ```swift
@@ -43,7 +50,7 @@ let deviceId = try await honeyNotify.register(
 )
 ```
 
-Use `refresh(deviceToken:)` after APNs rotates the token, `identify` after login, `logout` on sign-out, and `track(event:notificationId:)` from notification handlers. When verified identity is enabled, obtain the ES256 identity token from your backend and pass it to `register` or `identify`.
+Use `refresh(deviceToken:)` after APNs rotates the token, `identify` after login, `logout` on sign-out, and `track(event:notificationId:)` from notification handlers. Parsed notifications expose a typed `interruptionLevel`. When verified identity is enabled, obtain the ES256 identity token from your backend and pass it to `register` or `identify`.
 
 `HoneyNotifyMediaAttachment` can be used from a Notification Service Extension to download a rich notification image.
 
