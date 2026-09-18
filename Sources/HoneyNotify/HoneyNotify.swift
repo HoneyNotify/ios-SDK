@@ -50,6 +50,10 @@ public final class HoneyNotify {
         payload["locale"] = Locale.current.identifier
         payload["timezone"] = TimeZone.current.identifier
         payload["app_version"] = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        #if canImport(UIKit)
+        payload["device_model"] = Self.appleDeviceModel(UIDevice.current.model)
+        payload["os_version"] = UIDevice.current.systemVersion
+        #endif
         let response = try await request(path: "/v1/devices/register", body: payload)
         guard let deviceId = response["device_id"] as? String else { throw HoneyNotifyError.invalidResponse }
         UserDefaults.standard.set(deviceId, forKey: "HoneyNotify.deviceId")
@@ -57,6 +61,11 @@ public final class HoneyNotify {
         UserDefaults.standard.set(externalUserId, forKey: "HoneyNotify.externalUserId")
         UserDefaults.standard.set(tags, forKey: "HoneyNotify.tags")
         return deviceId
+    }
+
+    static func appleDeviceModel(_ model: String) -> String {
+        let model = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        return model.hasPrefix("Apple ") ? model : "Apple \(model)"
     }
 
     public func refresh(deviceToken: Data) async throws -> String {

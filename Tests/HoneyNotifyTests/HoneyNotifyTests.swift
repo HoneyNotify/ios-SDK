@@ -40,4 +40,9 @@ final class HoneyNotifyTests: XCTestCase {
         XCTAssertFalse(HoneyNotify.authorizationOptions().contains(.criticalAlert))
         XCTAssertTrue(HoneyNotify.authorizationOptions(includeCriticalAlerts: true).contains(.criticalAlert))
     }
+
+    func testAppleDeviceModelIncludesManufacturerOnce() {
+        XCTAssertEqual(HoneyNotify.appleDeviceModel("iPhone"), "Apple iPhone")
+        XCTAssertEqual(HoneyNotify.appleDeviceModel("Apple iPad"), "Apple iPad")
+    }
 }
